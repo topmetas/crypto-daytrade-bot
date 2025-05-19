@@ -22,7 +22,6 @@ iniciarIAAutoScheduler();
 const iniciarRelatorioDiario = require('./jobs/performanceReport');
 iniciarRelatorioDiario();
 
-
 app.use(express.json());
 app.use('/api/trade', tradeRoutes);
 
