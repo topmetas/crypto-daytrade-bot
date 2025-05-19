@@ -1,3 +1,8 @@
 pandas
 scikit-learn
 joblib
+requests
+python-telegram-bot
+schedule
+python-binance
+
