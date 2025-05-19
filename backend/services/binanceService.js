@@ -1,7 +1,7 @@
 // ==================== IMPORTAÇÕES ====================
 const Binance = require('node-binance-api');
 const Ordem = require('../models/Ordem');
-const coinbase = require('../services/coinbaseService'); // Assumindo que você tem esse módulo
+const coinbase = require('../services/coinbaseService'); // Módulo simulado de integração com a Coinbase
 require('dotenv').config();
 
 // ==================== CONFIGURAÇÃO DA BINANCE ====================
@@ -17,6 +17,14 @@ let lucroTotal = 0;
 let saldoMaximo = 0;
 let drawdownMaximo = 0;
 
+// ==================== CONTROLE DE RISCO ====================
+let perdaDiariaMaxima = 100; // Limite de perda diária em USDT
+let perdaDiariaAtual = 0;
+
+// ==================== CACHE DE PREÇO ====================
+let cachePreco = {};
+
+// ==================== FUNÇÕES DE MÉTRICA ====================
 function atualizarMetricas(ordem) {
   ordensExecutadas++;
   if (ordem.lucro > 0) ordensLucrativas++;
@@ -24,6 +32,9 @@ function atualizarMetricas(ordem) {
 
   saldoMaximo = Math.max(saldoMaximo, lucroTotal);
   drawdownMaximo = Math.min(drawdownMaximo, lucroTotal - saldoMaximo);
+
+  // Atualiza perda diária
+  perdaDiariaAtual += ordem.lucro < 0 ? Math.abs(ordem.lucro) : 0;
 }
 
 function calcularTaxaDeSucesso() {
@@ -39,7 +50,24 @@ function exibirDrawdownMaximo() {
   return drawdownMaximo;
 }
 
+function verificarLimitePerda() {
+  if (perdaDiariaAtual >= perdaDiariaMaxima) {
+    console.log("Limite de perda diário atingido. Pausando operações.");
+    return true;
+  }
+  return false;
+}
+
 // ==================== UTILITÁRIAS ====================
+async function getPreco(symbol) {
+  if (cachePreco[symbol] && Date.now() - cachePreco[symbol].timestamp < 60000) {
+    return cachePreco[symbol].preco;
+  }
+
+  const preco = await binance.getPrice(symbol);
+  cachePreco[symbol] = { preco, timestamp: Date.now() };
+  return preco;
+}
 
 async function calcularValor(symbol, quantidade) {
   const { bidPrice } = await binance.bookTicker(symbol);
@@ -55,7 +83,6 @@ async function verificarLimiteRisco(symbol, quantidade) {
 }
 
 // ==================== REGISTRO DE ORDEM ====================
-
 async function registrarOrdem(tipo, symbol, quantidade, preco) {
   const novaOrdem = new Ordem({ tipo, symbol, quantidade, preco });
 
@@ -80,8 +107,7 @@ async function registrarOrdem(tipo, symbol, quantidade, preco) {
   return novaOrdem;
 }
 
-// ==================== SL/TP ====================
-
+// ==================== STOP LOSS / TAKE PROFIT ====================
 async function definirStopLossTakeProfit(symbol, quantidade, precoEntrada) {
   const stopLossPercent = 0.02;
   const takeProfitPercent = 0.05;
@@ -105,8 +131,8 @@ async function definirStopLossTakeProfit(symbol, quantidade, precoEntrada) {
 }
 
 // ==================== OPERAÇÕES DE MERCADO ====================
-
 async function comprar(symbol = 'BTCUSDT', quantidade = 0.001) {
+  if (verificarLimitePerda()) return;
   await verificarLimiteRisco(symbol, quantidade);
   const order = await binance.marketBuy(symbol, quantidade);
   const preco = parseFloat(order.fills?.[0]?.price || 0);
@@ -116,6 +142,7 @@ async function comprar(symbol = 'BTCUSDT', quantidade = 0.001) {
 }
 
 async function comprarLimitado(symbol, quantidade, precoEntrada) {
+  if (verificarLimitePerda()) return;
   await verificarLimiteRisco(symbol, quantidade);
   const ordemCompra = await binance.futuresBuy(symbol, quantidade, {
     price: precoEntrada,
@@ -128,15 +155,14 @@ async function comprarLimitado(symbol, quantidade, precoEntrada) {
 }
 
 async function vender(symbol = 'BTCUSDT', quantidade = 0.001) {
+  if (verificarLimitePerda()) return;
   await verificarLimiteRisco(symbol, quantidade);
   const order = await binance.marketSell(symbol, quantidade);
   const preco = parseFloat(order.fills?.[0]?.price || 0);
-  const ordemRegistrada = await registrarOrdem('venda', symbol, quantidade, preco);
-  return ordemRegistrada;
+  return await registrarOrdem('venda', symbol, quantidade, preco);
 }
 
 // ==================== ORDENS ====================
-
 async function listarOrdens(symbol) {
   return await binance.openOrders(symbol);
 }
@@ -146,7 +172,6 @@ async function historicoOrdens(symbol) {
 }
 
 // ==================== INDICADORES ====================
-
 function calcularMediaMovel(precos, periodo = 14) {
   const medias = [];
   for (let i = periodo - 1; i < precos.length; i++) {
@@ -184,18 +209,31 @@ function calcularMACD(precos, curto = 12, longo = 26, sinal = 9) {
   return { macd, sinal: sinalLinha };
 }
 
-// ==================== ESTRATÉGIAS ====================
+// ==================== ANÁLISE DE VOLUME ====================
+async function analisarVolume(symbol) {
+  const precos = await binance.futuresCandles(symbol, '1h', { limit: 100 });
+  const volume = precos.reduce((acc, p) => acc + parseFloat(p.volume), 0);
+  console.log(`Volume total no período: ${volume}`);
+}
 
+// ==================== BACKTEST ====================
+function backtestStrategy(strategy, historicoDados) {
+  let lucro = 0;
+  historicoDados.forEach(candle => {
+    const resultado = strategy(candle);
+    lucro += resultado.lucro;
+  });
+  console.log("Lucro do Backtest: ", lucro);
+}
+
+// ==================== ESTRATÉGIAS ====================
 async function scalpingStrategy(symbol) {
   const precos = await binance.futuresCandles(symbol, '1m', { limit: 20 });
   const ultimoPreco = parseFloat(precos.at(-1).close);
   const mediaPreco = precos.reduce((acc, p) => acc + parseFloat(p.close), 0) / precos.length;
 
-  if (ultimoPreco > mediaPreco) {
-    await comprar(symbol, 0.001);
-  } else if (ultimoPreco < mediaPreco) {
-    await vender(symbol, 0.001);
-  }
+  if (ultimoPreco > mediaPreco) await comprar(symbol, 0.001);
+  else if (ultimoPreco < mediaPreco) await vender(symbol, 0.001);
 }
 
 async function breakoutStrategy(symbol, limiteSuperior, limiteInferior) {
@@ -244,7 +282,6 @@ async function arbitragem(symbol) {
 }
 
 // ==================== EXPORTAÇÃO ====================
-
 module.exports = {
   comprar,
   comprarLimitado,
@@ -262,8 +299,12 @@ module.exports = {
   arbitragem,
   calcularTaxaDeSucesso,
   exibirLucroTotal,
-  exibirDrawdownMaximo
+  exibirDrawdownMaximo,
+  analisarVolume,
+  getPreco,
+  backtestStrategy
 };
+
 
 
 
