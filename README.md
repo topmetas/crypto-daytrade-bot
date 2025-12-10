@@ -1,127 +1,101 @@
-💹 crypto-daytrade-bot
-Bot completo de day trade com criptomoedas, utilizando:
+# 💹 Crypto Daytrade Bot  
 
-Backend com Node.js + Express + MongoDB
+Bot automatizado para operações de day trade em criptomoedas. Permite simulação (ou real, se adaptado) de compra/venda, estratégias automáticas, logs e histórico de operações.  
 
-Frontend com React
+---
 
-IA (Inteligência Artificial) em Python com scikit-learn
+## 🎯 Objetivo do Projeto
 
-Integração com a Binance
+Criar um sistema automatizado (bot) capaz de:
 
-Alertas por Telegram
+- Monitorar preços de criptomoedas via API (ex: Binance, CoinGecko etc.)  
+- Executar ordens de compra / venda conforme estratégias (ex: médias, indicadores)  
+- Registrar histórico de operações  
+- Gerar relatórios / logs de performance  
+- Ser modular, configurável e extensível  
 
-Autenticação JWT
+Bom para quem deseja estudar bots de trade, estratégias automatizadas, automações financeiras ou pesquisa de mercado cripto.  
 
-Dashboard com gráficos e histórico de ordens
+---
 
-📁 Estrutura de Pastas
-bash
-Copiar
-Editar
+## ✅ Funcionalidades Principais
+
+- Consumo de API de exchanges para dados de mercado  
+- Estratégias de compra / venda automática configuráveis  
+- Logs de histórico (preço, quantidade, timestamps)  
+- Simulação de trades / modo “paper-trade”  
+- Modularidade e código organizado para novos indicadores ou regras  
+- Configuração via arquivo/envio de variáveis (API keys, pares, etc.)  
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+- Node.js  
+- TypeScript (se usado) ou JavaScript  
+- Axios / fetch para consumo de APIs externas  
+- Módulos de lógica de trade e timers / intervalos  
+- Sistema de logs / armazenamento local ou em banco (JSON, SQLite, MongoDB etc.)  
+
+---
+
+## 📂 Estrutura do Projeto
+
 crypto-daytrade-bot/
-├── backend/              # Node.js + Express + MongoDB
-├── frontend/             # React com gráficos e painel
-├── ai-model/             # Python + scikit-learn
-├── .env                  # Configurações e chaves
-└── README.md             # Este arquivo
-⚙️ Pré-requisitos
-Node.js (v18+)
+├── src/
+│ ├── services/ # lógica de trade, API, utils
+│ ├── configs/ # configurações e variáveis
+│ ├── logs/ # histórico de operações
+│ └── index.js / bot.js
+├── package.json
+└── README.md ← (você está aqui)
 
-Python 3.10+
+yaml
+Copiar código
 
-MongoDB
+---
 
-Conta na Binance com API Key e Secret
+## ⚙️ Como Executar / Simular
 
-Conta no Telegram (bot + chat ID)
-
-🔐 Configuração do .env
-Crie um arquivo .env na raiz do projeto com o seguinte conteúdo:
-
-env
-Copiar
-Editar
-# MongoDB
-MONGODB_URI=mongodb://localhost:27017/crypto-bot
-
-# JWT
-JWT_SECRET=sua_chave_secreta
-
-# Binance
-BINANCE_API_KEY=sua_api_key
-BINANCE_API_SECRET=sua_api_secret
-BINANCE_TESTNET=true
-
-# Telegram
-TELEGRAM_BOT_TOKEN=seu_token_telegram
-TELEGRAM_CHAT_ID=seu_chat_id
-
-# IA
-BACKEND_URL=http://localhost:5000/api
-JWT_TOKEN=token_gerado_ao_fazer_login
-🚀 Passo a passo para rodar o projeto
-1. Clonar o projeto
-bash
-Copiar
-Editar
-git clone https://github.com/seu-usuario/crypto-daytrade-bot.git
+1. Clone este repositório  
+```bash
+git clone https://github.com/topmetas/crypto-daytrade-bot.git
 cd crypto-daytrade-bot
-2. Iniciar o Backend
-bash
-Copiar
-Editar
-cd backend
+Instale dependências
+
 npm install
-npm run dev
-Servidor será iniciado em http://localhost:5000
+Configure variáveis (se necessário):
 
-3. Iniciar o Frontend
-bash
-Copiar
-Editar
-cd ../frontend
-npm install
-npm run dev
-Frontend será aberto em http://localhost:5173
+ini
+Copiar código
+API_KEY=suachave  
+API_SECRET=seusegredo  
+PAIR=BTCUSDT  
+INTERVAL=1m  
+STRATEGY=strategy_name  
+Inicie o bot (modo simulação):
 
-4. Rodar a IA
-bash
-Copiar
-Editar
-cd ../ai-model
-pip install -r requirements.txt
-python modelo_tendencia.py     # Treina o modelo
-python run_scheduler.py        # Executa previsão automática
-📊 Funcionalidades
-✅ Previsão de tendência (IA)
-✅ Estratégias inteligentes (RSI, MACD, Bollinger, Médias Móveis)
-✅ Ordens reais com a Binance (modo teste ou produção)
-✅ Dashboard com lucros, gráfico e histórico
-✅ Autenticação com JWT
-✅ Botão manual “Obter previsão”
-✅ Execução periódica automática da IA
-✅ Notificações via Telegram
-✅ Controle de risco por operação
-✅ Backtesting e relatórios diários
+npm start
+Verifique logs em logs/ para acompanhar histórico de trades e indicadores.
 
-📈 Tecnologias
-Frontend: React, TailwindCSS, Chart.js
+📈 Possíveis Melhorias & Avisos
+Integrar com conta real (API da exchange) — use com cautela
 
-Backend: Express, Mongoose, JWT, Binance API
+Adicionar sistema de alerta / notificações (e-mail / Telegram / Discord)
 
-IA: Python, scikit-learn, joblib, schedule
+Suporte a múltiplos pares de criptomoedas
 
-Infra: MongoDB, .env, Telegram Bot, Docker (opcional)
+Testes unitários / integração
 
-🧠 Contribuindo com Estratégias
-O sistema é modular. Para adicionar novas estratégias:
+Interface gráfica ou dashboard web para configurações e resultados
 
-Edite o arquivo estrategias.js no backend
+Controle de risco / stop-loss / take-profit / gerenciamento de capital
 
-Crie funções no frontend para exibir as opções
+⚠️ Aviso Importante
+Este bot é para fins educacionais e não constitui recomendação financeira. Uso em contas reais deve ser feito com extremo cuidado — você é responsável pelos seus investimentos.
 
-Treine novos modelos no ai-model/
+📄 Licença
+Licença MIT — consulte o arquivo LICENSE.
 
-📬 Suporte
-Para dúvidas ou sugestões, entre em contato comigo no Telegram ou abra uma issue no repositório.
+📫 Contato / Feedback
+Para dúvidas, sugestões ou contribuições, abra uma Issue ou contate via topmetas@gmail.com
